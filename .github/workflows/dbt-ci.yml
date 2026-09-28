@@ -68,6 +68,11 @@ jobs:
         env:
           DBT_PROFILES_DIR: ${{ github.workspace }}/ci
         run: uv run dbt deps
+      
+      - name: Load raw CI fixtures
+        env:
+          PGPASSWORD: postgres
+        run: psql -h localhost -U postgres -d saas_billing -f ci/seed_raw.sql
 
       - name: dbt build
         working-directory: saas_billing
