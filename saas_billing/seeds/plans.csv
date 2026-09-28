@@ -1,0 +1,7 @@
+plan_id,plan_name,billing_interval,current_price,created_at
+plan_1,starter,monthly,15.0,2023-01-01
+plan_2,starter,annual,150.0,2023-01-01
+plan_3,growth,monthly,49.0,2023-01-01
+plan_4,growth,annual,490.0,2023-01-01
+plan_5,scale,monthly,129.0,2023-01-01
+plan_6,scale,annual,1290.0,2023-01-01

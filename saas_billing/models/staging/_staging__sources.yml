@@ -1,0 +1,15 @@
+version: 2
+
+sources:
+  - name: raw
+    schema: public
+
+    tables:
+      - name: customers
+      - name: customer_address_changes
+      - name: plan_price_changes
+      - name: subscriptions
+      - name: subscription_events
+      - name: invoices
+      - name: payment_events
+      - name: support_tickets

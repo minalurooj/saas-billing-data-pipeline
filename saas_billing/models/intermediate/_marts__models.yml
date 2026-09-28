@@ -1,0 +1,99 @@
+version: 2
+
+models:
+  - name: int_customer_history
+    description: SCD2 history of customer addresses — one row per address version per customer.
+    columns:
+      - name: customer_id
+        tests:
+          - not_null
+      - name: valid_from
+        tests:
+          - not_null
+      - name: valid_to
+        tests:
+          - not_null
+    tests:
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "valid_from < valid_to"
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - customer_id
+          config:
+            where: "is_current = true"
+
+  - name: int_plan_history
+    description: SCD2 history of plan prices — one row per price version per plan.
+    columns:
+      - name: plan_id
+        tests:
+          - not_null
+      - name: valid_from
+        tests:
+          - not_null
+      - name: valid_to
+        tests:
+          - not_null
+    tests:
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "valid_from < valid_to"
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - plan_id
+          config:
+            where: "is_current = true"
+
+  - name: int_active_subscription_periods
+    description: SCD2-style periods of active subscription plan/price assignment, point-in-time priced.
+    columns:
+      - name: subscription_id
+        tests:
+          - not_null
+      - name: customer_id
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_customers')
+                field: customer_id
+      - name: plan_id
+        tests:
+          - relationships:
+              arguments:
+                to: ref('stg_plans')
+                field: plan_id
+      - name: valid_from
+        tests:
+          - not_null
+    tests:
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "valid_from < valid_to"
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - subscription_id
+          config:
+            where: "is_current = true"
+
+  - name: int_mrr_movements
+    description: One row per MRR-changing event per subscription, classified by movement type.
+    columns:
+      - name: subscription_id
+        tests:
+          - not_null
+      - name: movement_type
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['new', 'expansion', 'contraction', 'churn', 'reactivation', 'no_change']
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - subscription_id
+              - movement_date

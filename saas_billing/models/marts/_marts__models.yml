@@ -1,0 +1,78 @@
+version: 2
+
+models:
+  - name: dim_customers
+    description: One row per customer, with current attributes and current address.
+    columns:
+      - name: customer_id
+        tests:
+          - unique
+          - not_null
+
+  - name: dim_plans
+    description: One row per plan, showing its current price and billing interval.
+    columns:
+      - name: plan_id
+        tests:
+          - unique
+          - not_null
+
+  - name: fct_mrr_movements
+    description: >
+      One row per MRR-changing event per subscription (new, expansion,
+      contraction, churn, reactivation). Core fact table for revenue reporting.
+    columns:
+      - name: subscription_id
+        tests:
+          - not_null
+      - name: customer_id
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_customers')
+                field: customer_id
+      - name: plan_id
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_plans')
+                field: plan_id
+      - name: movement_type
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['new', 'expansion', 'contraction', 'churn', 'reactivation', 'no_change']
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - subscription_id
+              - movement_date
+
+  - name: fct_monthly_mrr_summary
+    description: Monthly MRR movement waterfall — subscriptions affected and total delta per movement type per month.
+    columns:
+      - name: movement_type
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['new', 'expansion', 'contraction', 'churn', 'reactivation', 'no_change']
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - movement_month
+              - movement_type
+
+  - name: mart_customer_360
+    description: One row per customer, denormalizing current MRR, billing totals, and support ticket activity.
+    columns:
+      - name: customer_id
+        tests:
+          - unique
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_customers')
+                field: customer_id

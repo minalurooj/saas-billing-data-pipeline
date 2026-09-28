@@ -1,0 +1,56 @@
+with periods as (
+    select subscription_id, customer_id, plan_id, mrr_amount, start_reason, valid_from
+    from {{ ref('int_active_subscription_periods') }}
+),
+
+churn_events as (
+    select
+        e.subscription_id,
+        e.customer_id,
+        e.plan_id,
+        0::decimal(10,2) as mrr_amount,
+        e.subscription_event_type as start_reason,
+        e.subscription_event_timestamp as valid_from
+    from {{ ref('stg_subscription_events') }} e
+    where e.subscription_event_type = 'canceled'
+),
+
+all_movements as (
+    select * from periods
+    union all
+    select * from churn_events
+),
+
+with_previous as (
+    select
+        subscription_id,
+        customer_id,
+        plan_id,
+        start_reason,
+        valid_from,
+        mrr_amount as new_mrr,
+        lag(mrr_amount) over (
+            partition by subscription_id order by valid_from asc
+        ) as previous_mrr
+    from all_movements
+)
+
+select
+    subscription_id,
+    customer_id,
+    plan_id,
+    valid_from as movement_date,
+    coalesce(previous_mrr, 0) as previous_mrr,
+    new_mrr,
+    new_mrr - coalesce(previous_mrr, 0) as mrr_delta,
+   
+    case
+        when start_reason = 'created' then 'new'
+        when start_reason = 'reactivated' then 'reactivation'
+        when start_reason = 'canceled' then 'churn'
+        when new_mrr > coalesce(previous_mrr, 0) then 'expansion'
+        when new_mrr < coalesce(previous_mrr, 0) then 'contraction'
+        else 'no_change'
+    end as movement_type
+from with_previous
+order by subscription_id, valid_from
