@@ -1,0 +1,76 @@
+name: dbt CI
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  dbt-ci:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: saas_billing
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DBT_POSTGRES_HOST: localhost
+      DBT_POSTGRES_USER: postgres
+      DBT_POSTGRES_PASSWORD: postgres
+      DBT_POSTGRES_DB: saas_billing
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Create dbt profile
+        run: |
+          mkdir -p ci
+          cat > ci/profiles.yml <<'EOF'
+          saas_billing:
+            target: ci
+            outputs:
+              ci:
+                type: postgres
+                host: "{{ env_var('DBT_POSTGRES_HOST') }}"
+                user: "{{ env_var('DBT_POSTGRES_USER') }}"
+                password: "{{ env_var('DBT_POSTGRES_PASSWORD') }}"
+                port: 5432
+                dbname: "{{ env_var('DBT_POSTGRES_DB') }}"
+                schema: public
+                threads: 4
+          EOF
+
+      - name: Install dbt packages
+        working-directory: saas_billing
+        env:
+          DBT_PROFILES_DIR: ${{ github.workspace }}/ci
+        run: uv run dbt deps
+
+      - name: dbt build
+        working-directory: saas_billing
+        env:
+          DBT_PROFILES_DIR: ${{ github.workspace }}/ci
+        run: uv run dbt build
