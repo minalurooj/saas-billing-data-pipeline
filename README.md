@@ -169,7 +169,7 @@ dbt build
 ### Prerequisites
 
 - Python **3.11** (see `.python-version`)
-- [`uv`]
+- `uv`
 - Docker Desktop (for Airflow)
 - PostgreSQL 16 with a database named `saas_billing`
 
