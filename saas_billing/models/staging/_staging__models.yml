@@ -42,7 +42,7 @@ models:
         tests:
           - accepted_values:
               arguments:
-                values: ['active', 'canceled', 'expired', 'pending'] # Update these to match your actual status values if different!
+                values: ['active', 'canceled', 'expired', 'pending'] 
 
   - name: stg_support_tickets
     columns:
