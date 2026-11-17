@@ -8,7 +8,7 @@ DBT_PROFILES_DIR = "/opt/airflow/dbt"
 with DAG(
     dag_id="dbt_saas_billing",
     start_date=datetime(2026, 1, 1),
-    schedule=None,  # run manually for now, add a schedule later once it works
+    schedule=None,  
     catchup=False,
 ) as dag:
 
