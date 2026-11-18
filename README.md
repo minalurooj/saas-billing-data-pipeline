@@ -2,7 +2,7 @@
 
 An end-to-end data engineering project that turns raw SaaS subscription and billing
 data into revenue analytics: including **MRR movement analysis (new / expansion / contraction /
-churn / reactivation)**, point-in-time pricing, SCD2 history, and a customer-360 mart.
+churn / reactivation)**, point-in-time pricing and SCD2 history.
 
 Built with **dbt (PostgreSQL)** for transformation, **Apache Airflow** for orchestration
 and **Docker** for a reproducible local environment.
@@ -33,9 +33,7 @@ and **Docker** for a reproducible local environment.
 A fictional SaaS company sells monthly and annual subscription plans and wants to answer questions such as:
 
 - How much **new MRR** was added this month and how much came from **expansion**, **contraction**, **churn** and **reactivation**?
-- What is each customer's **current MRR**, total invoiced, amount collected and outstanding balance?
 - How has a plan's **price changed over time** and which price was in effect when a subscription event occurred ?
-- What does the **customer 360 view** look like across billing, current MRR and support activity ?
 
 The pipeline ingests 8 raw source tables, cleans and standardizes them in a staging layer,
 applies history and point-in-time logic in an intermediate layer, and produces analytics-ready
@@ -142,7 +140,6 @@ One model per source (`stg_*`): trimming/lowering strings, casting types, no bus
 | `dim_plans` | 1 row / plan | Current plan price and billing interval. |
 | `fct_mrr_movements` | 1 row / MRR event | Movement fact with previous/new MRR and delta. |
 | `fct_monthly_mrr_summary` | month × movement_type | MRR movement summary (subscriptions affected, total delta). |
-| `mart_customer_360` | 1 row / customer | Denormalised current MRR + invoiced/paid/outstanding + support activity. |
 
 ### Seeds
 `seeds/plans.csv` — the 6 product plans (3 tiers × monthly/annual).
@@ -154,7 +151,6 @@ One model per source (`stg_*`): trimming/lowering strings, casting types, no bus
 - **Generic tests** in YAML: `unique`, `not_null`, `accepted_values` and `relationships`
   across staging, intermediate and marts.
 - **dbt_utils** tests: `expression_is_true`, `unique_combination_of_columns`.
-- **Singular tests**: `tests/assert_mrr_never_negative.sql` asserts that no MRR value is negative.
 
 Run the full dbt workflow with:
 
